@@ -1,0 +1,537 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>State Sprint | U.S. Geography Quiz</title>
+  <style>
+    :root {
+      --green: #173f35;
+      --light-green: #e7f1e9;
+      --background: #f5f3ed;
+      --white: #ffffff;
+      --gray: #68766f;
+      --red: #b7473c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--background);
+      color: #1d2b26;
+    }
+
+    header {
+      background: var(--green);
+      color: white;
+      padding: 22px;
+      text-align: center;
+    }
+
+    main {
+      max-width: 900px;
+      margin: 35px auto;
+      padding: 0 18px;
+    }
+
+    h1 {
+      font-family: Georgia, serif;
+      font-size: clamp(34px, 5vw, 52px);
+      color: var(--green);
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: var(--gray);
+      line-height: 1.6;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin: 25px 0;
+    }
+
+    .stat, .card {
+      background: var(--white);
+      border: 1px solid #e1e6df;
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .stat { text-align: center; }
+
+    .stat span {
+      display: block;
+      color: var(--gray);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .stat strong {
+      font-size: 27px;
+      color: var(--green);
+    }
+
+    .progress {
+      height: 9px;
+      background: #e5eae3;
+      border-radius: 20px;
+      overflow: hidden;
+      margin: 18px 0 28px;
+    }
+
+    #progressFill {
+      height: 100%;
+      width: 0%;
+      background: var(--green);
+      transition: width .3s;
+    }
+
+    .map-frame {
+      min-height: 270px;
+      background: #f0f5ef;
+      border-radius: 15px;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    svg {
+      width: 100%;
+      max-width: 400px;
+      height: 220px;
+    }
+
+    #stateShape {
+      fill: #8caf99;
+      stroke: #315b49;
+      stroke-width: 2;
+      stroke-linejoin: round;
+    }
+
+    #mapStatus {
+      font-size: 12px;
+      color: var(--gray);
+    }
+
+    .options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .option {
+      padding: 17px;
+      background: white;
+      border: 1px solid #dfe5de;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: bold;
+      text-align: left;
+    }
+
+    .option:hover:not(:disabled) {
+      background: var(--light-green);
+      border-color: var(--green);
+    }
+
+    .option.correct {
+      background: #d9f0df;
+      border-color: #27834c;
+      color: #155a36;
+    }
+
+    .option.wrong {
+      background: #fce3df;
+      border-color: var(--red);
+      color: #912f28;
+    }
+
+    button:focus-visible {
+      outline: 3px solid #76a68e;
+      outline-offset: 3px;
+    }
+
+    .feedback {
+      min-height: 45px;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .primary {
+      background: var(--green);
+      color: white;
+      border: 0;
+      border-radius: 10px;
+      padding: 14px 20px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .primary:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    .reset {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      color: var(--gray);
+    }
+
+    #results {
+      display: none;
+      text-align: center;
+      padding: 30px;
+    }
+
+    @media (max-width: 650px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .options { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <strong>✳ STATE SPRINT</strong>
+    <p>A U.S. Geography Challenge</p>
+  </header>
+
+  <main>
+    <h1>Know Your United States.</h1>
+    <p class="subtitle">
+      Can you identify all 50 states by their geographic outlines?
+      Choose the correct state name from four options.
+    </p>
+
+    <section class="stats" aria-label="Quiz statistics">
+      <div class="stat"><span>Correct</span><strong id="correct">0</strong></div>
+      <div class="stat"><span>Incorrect</span><strong id="incorrect">0</strong></div>
+      <div class="stat"><span>Current Streak</span><strong id="streak">0</strong></div>
+      <div class="stat"><span>Best Streak</span><strong id="best">0</strong></div>
+      <div class="stat"><span>Personal Record</span><strong id="record">0</strong></div>
+    </section>
+
+    <section class="card" id="quiz">
+      <p id="questionNumber">Question 1 of 50</p>
+      <div class="progress" role="progressbar" aria-label="Quiz progress">
+        <div id="progressFill"></div>
+      </div>
+
+      <h2>Which state is this?</h2>
+
+      <div class="map-frame">
+        <div>
+          <svg id="stateMap" viewBox="0 0 400 220"
+               role="img" aria-label="Outline of an unidentified U.S. state">
+            <path id="stateShape" d=""></path>
+          </svg>
+          <p id="mapStatus">Loading state boundary...</p>
+        </div>
+      </div>
+
+      <div class="options" id="options"></div>
+      <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+
+      <div class="actions">
+        <button class="reset" id="resetBtn">Reset Quiz</button>
+        <button class="primary" id="nextBtn" disabled>Next Question →</button>
+      </div>
+    </section>
+
+    <section class="card" id="results">
+      <h2>Round Complete!</h2>
+      <h1 id="finalScore"></h1>
+      <p id="finalMessage"></p>
+      <button class="primary" id="playAgain">Play Again</button>
+    </section>
+  </main>
+
+  <script>
+    const states = [
+      "Alabama", "Alaska", "Arizona", "Arkansas", "California",
+      "Colorado", "Connecticut", "Delaware", "Florida", "Georgia",
+      "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa",
+      "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland",
+      "Massachusetts", "Michigan", "Minnesota", "Mississippi",
+      "Missouri", "Montana", "Nebraska", "Nevada",
+      "New Hampshire", "New Jersey", "New Mexico", "New York",
+      "North Carolina", "North Dakota", "Ohio", "Oklahoma",
+      "Oregon", "Pennsylvania", "Rhode Island", "South Carolina",
+      "South Dakota", "Tennessee", "Texas", "Utah", "Vermont",
+      "Virginia", "Washington", "West Virginia", "Wisconsin",
+      "Wyoming"
+    ];
+
+    const $ = id => document.getElementById(id);
+
+    let questions = [];
+    let current = 0;
+    let correct = 0;
+    let incorrect = 0;
+    let streak = 0;
+    let best = 0;
+    let answered = false;
+    let personalRecord = 0;
+    let mapDataPromise;
+
+    try {
+      personalRecord = Number(
+        localStorage.getItem("stateSprintRecord") || 0
+      );
+    } catch (error) {
+      personalRecord = 0;
+    }
+
+    function shuffle(array) {
+      const result = [...array];
+
+      for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+
+      return result;
+    }
+
+    function updateStats() {
+      $("correct").textContent = correct;
+      $("incorrect").textContent = incorrect;
+      $("streak").textContent = streak;
+      $("best").textContent = best;
+      $("record").textContent = personalRecord;
+
+      $("questionNumber").textContent =
+        `Question ${current + 1} of 50`;
+
+      const completed = current + (answered ? 1 : 0);
+      $("progressFill").style.width = `${completed / 50 * 100}%`;
+    }
+
+    async function loadMapData() {
+      if (!mapDataPromise) {
+        mapDataPromise = fetch(
+          "https://cdn.jsdelivr.net/gh/PublicaMundi/MappingAPI@master/data/geojson/us-states.json"
+        ).then(response => {
+          if (!response.ok) {
+            throw new Error("Unable to load state map data.");
+          }
+          return response.json();
+        });
+      }
+
+      return mapDataPromise;
+    }
+
+    async function drawState(stateName) {
+      const path = $("stateShape");
+      const status = $("mapStatus");
+
+      path.setAttribute("d", "");
+      status.textContent = "Loading state boundary...";
+
+      try {
+        const data = await loadMapData();
+
+        const feature = data.features.find(
+          item => item.properties.name === stateName
+        );
+
+        if (!feature) {
+          throw new Error("State not found.");
+        }
+
+        const geometry = feature.geometry;
+
+        const polygons = geometry.type === "Polygon"
+          ? [geometry.coordinates]
+          : geometry.coordinates;
+
+        const rings = polygons.map(polygon => polygon[0]);
+        const points = rings.flat();
+
+        const longitudes = points.map(point => point[0]);
+        const latitudes = points.map(point => point[1]);
+
+        const minX = Math.min(...longitudes);
+        const maxX = Math.max(...longitudes);
+        const minY = Math.min(...latitudes);
+        const maxY = Math.max(...latitudes);
+
+        const scale = Math.min(
+          360 / (maxX - minX || 1),
+          180 / (maxY - minY || 1)
+        );
+
+        const width = (maxX - minX) * scale;
+        const height = (maxY - minY) * scale;
+
+        const offsetX = (400 - width) / 2;
+        const offsetY = (220 - height) / 2;
+
+        const pathData = rings.map(ring => {
+          return ring.map((point, index) => {
+            const x = offsetX + (point[0] - minX) * scale;
+            const y = offsetY + (maxY - point[1]) * scale;
+
+            return `${index === 0 ? "M" : "L"}${x},${y}`;
+          }).join(" ") + " Z";
+        }).join(" ");
+
+        path.setAttribute("d", pathData);
+        status.textContent = "U.S. state outline";
+
+      } catch (error) {
+        status.textContent =
+          "Unable to load the state outline. Check your internet connection.";
+      }
+    }
+
+    function renderQuestion() {
+      answered = false;
+      $("nextBtn").disabled = true;
+      $("feedback").textContent = "";
+
+      const answer = questions[current];
+      drawState(answer);
+
+      const otherStates = shuffle(
+        states.filter(state => state !== answer)
+      ).slice(0, 3);
+
+      const choices = shuffle([answer, ...otherStates]);
+      const letters = ["A", "B", "C", "D"];
+
+      $("options").innerHTML = "";
+
+      choices.forEach((state, index) => {
+        const button = document.createElement("button");
+        button.className = "option";
+        button.textContent = `${letters[index]}. ${state}`;
+
+        button.addEventListener("click", () => {
+          chooseAnswer(state, answer, button);
+        });
+
+        $("options").appendChild(button);
+      });
+
+      $("nextBtn").textContent =
+        current === 49 ? "See Results →" : "Next Question →";
+
+      updateStats();
+    }
+
+    function chooseAnswer(choice, answer, selectedButton) {
+      if (answered) return;
+
+      answered = true;
+
+      const buttons = document.querySelectorAll(".option");
+
+      buttons.forEach(button => {
+        button.disabled = true;
+
+        if (button.textContent.slice(3) === answer) {
+          button.classList.add("correct");
+        }
+      });
+
+      if (choice === answer) {
+        correct++;
+        streak++;
+        best = Math.max(best, streak);
+
+        if (streak > personalRecord) {
+          personalRecord = streak;
+
+          try {
+            localStorage.setItem(
+              "stateSprintRecord",
+              String(personalRecord)
+            );
+          } catch (error) {}
+        }
+
+        $("feedback").textContent =
+          `✓ Correct! The state is ${answer}.`;
+        $("feedback").style.color = "#217a50";
+
+      } else {
+        incorrect++;
+        streak = 0;
+
+        selectedButton.classList.add("wrong");
+
+        $("feedback").textContent =
+          `✗ Not quite. The correct state is ${answer}.`;
+        $("feedback").style.color = "#b7473c";
+      }
+
+      $("nextBtn").disabled = false;
+      updateStats();
+    }
+
+    function nextQuestion() {
+      if (!answered) return;
+
+      if (current === 49) {
+        showResults();
+      } else {
+        current++;
+        renderQuestion();
+      }
+    }
+
+    function showResults() {
+      $("quiz").style.display = "none";
+      $("results").style.display = "block";
+
+      $("finalScore").textContent = `${correct} / 50`;
+
+      const percentage = Math.round(correct / 50 * 100);
+
+      $("finalMessage").textContent =
+        `You scored ${percentage}% and achieved a best streak of ${best}.`;
+    }
+
+    function startGame() {
+      questions = shuffle(states);
+      current = 0;
+      correct = 0;
+      incorrect = 0;
+      streak = 0;
+      best = 0;
+      answered = false;
+
+      $("quiz").style.display = "block";
+      $("results").style.display = "none";
+
+      renderQuestion();
+    }
+
+    $("nextBtn").addEventListener("click", nextQuestion);
+    $("resetBtn").addEventListener("click", startGame);
+    $("playAgain").addEventListener("click", startGame);
+
+    startGame();
+  </script>
+</body>
+</html>
